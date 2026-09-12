@@ -141,6 +141,35 @@ const sendUsingCmiChinaMobile = async ({ phone, text, date }) => {
   }
 };
 
+const getSmartSmsBalance = async () => {
+  requireConfig('smart-sms-uae', {
+    userName: env.smartSmsUae.userName,
+    apiPassword: env.smartSmsUae.apiPassword
+  });
+
+  let response;
+  try {
+    response = await axios.get('https://smartsmsgateway.com/api/api_http_balance.php', {
+      params: {
+        username: env.smartSmsUae.userName,
+        password: env.smartSmsUae.apiPassword
+      },
+      timeout: env.gatewayTimeoutMs,
+      validateStatus: (status) => status >= 200 && status < 300
+    });
+  } catch (_error) {
+    throw new AppError('SMS balance request failed', 502, 'BALANCE_REQUEST_FAILED');
+  }
+
+  const value = response.data;
+  const balance = typeof value === 'number' ? value
+    : typeof value === 'string' && /^\d+(?:\.\d+)?$/.test(value.trim()) ? Number(value.trim()) : NaN;
+  if (!Number.isFinite(balance) || balance < 0) {
+    throw new AppError('SMS gateway returned an invalid balance', 502, 'INVALID_BALANCE_RESPONSE');
+  }
+  return balance;
+};
+
 const sendSms = async (message) => {
   switch (message.type) {
     case 'smart-sms-uae':
@@ -154,5 +183,6 @@ const sendSms = async (message) => {
 
 module.exports = {
   sendSms,
+  getSmartSmsBalance,
   getUnixTime
 };

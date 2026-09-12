@@ -8,6 +8,7 @@ const env = require('./config/env');
 const requestLogger = require('./middleware/requestLogger');
 const errorHandler = require('./middleware/errorHandler');
 const smsRoutes = require('./routes/sms.routes');
+const smsLogRoutes = require('./routes/smsLogs.routes');
 const { sha256 } = require('./utils/hash');
 
 const createApp = () => {
@@ -59,6 +60,7 @@ const createApp = () => {
   }));
 
   app.use('/api', smsRoutes);
+  app.use('/smslogs', smsLogRoutes);
 
   app.use((_req, res) => {
     res.status(404).json({
