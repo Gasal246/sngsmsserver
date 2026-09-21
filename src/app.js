@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const env = require('./config/env');
 const requestLogger = require('./middleware/requestLogger');
+const rawRequestLogger = require('./middleware/rawRequestLogger');
 const errorHandler = require('./middleware/errorHandler');
 const smsRoutes = require('./routes/sms.routes');
 const smsLogRoutes = require('./routes/smsLogs.routes');
@@ -24,6 +25,7 @@ const createApp = () => {
     next();
   });
 
+  app.use(rawRequestLogger());
   app.use(requestLogger());
 
   app.get('/health', (_req, res) => {

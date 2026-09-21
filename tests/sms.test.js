@@ -18,6 +18,7 @@ const loadApp = () => {
 
   const axiosPost = jest.fn();
   const requestLogCreate = jest.fn().mockResolvedValue({});
+  const rawRequestLogCreate = jest.fn().mockResolvedValue({});
 
   jest.doMock('axios', () => ({
     post: axiosPost
@@ -26,13 +27,17 @@ const loadApp = () => {
   jest.doMock('../src/models/requestLog.model', () => ({
     create: requestLogCreate
   }));
+  jest.doMock('../src/models/rawRequestLog.model', () => ({
+    create: rawRequestLogCreate
+  }));
 
   const createApp = require('../src/app');
 
   return {
     app: createApp(),
     axiosPost,
-    requestLogCreate
+    requestLogCreate,
+    rawRequestLogCreate
   };
 };
 
@@ -41,7 +46,8 @@ const validBody = {
   phone: '971500000000',
   text: 'Your OTP is 123456',
   date: '2026-06-23T10:30:00Z',
-  campId: 'camp-1'
+  campId: 'camp-1',
+  sms_type: 'verification'
 };
 
 describe('SMS API', () => {
@@ -166,7 +172,7 @@ describe('SMS API', () => {
     expect(response.body.error.code).toBe('GATEWAY_NON_SUCCESS_STATUS');
   });
 
-  test('logs campId and redacts full SMS text', async () => {
+  test('logs campId and sms_type and redacts full SMS text', async () => {
     const { app, axiosPost, requestLogCreate } = loadApp();
     axiosPost.mockResolvedValue({ status: 200, data: 'OK' });
 
@@ -179,11 +185,34 @@ describe('SMS API', () => {
     const log = requestLogCreate.mock.calls[0][0];
 
     expect(log.request.campId).toBe('camp-1');
+    expect(log.request.sms_type).toBe('verification');
     expect(log.request.textLength).toBe('Your OTP is 123456'.length);
     expect(log.request.textHash).toHaveLength(64);
     expect(log.request.text).toBeUndefined();
     expect(JSON.stringify(log)).not.toContain('test-client-key');
     expect(JSON.stringify(log)).not.toContain('smart-password');
     expect(JSON.stringify(log)).not.toContain('Your OTP is 123456');
+  });
+
+  test('stores the original client body in the raw request log', async () => {
+    const { app, axiosPost, rawRequestLogCreate } = loadApp();
+    axiosPost.mockResolvedValue({ status: 200, data: 'OK' });
+    const clientBody = {
+      ...validBody,
+      client_only_field: { source: 'mobile', attempt: 2 }
+    };
+
+    await request(app)
+      .post('/api/send-otp')
+      .set('x-api-key', 'test-client-key')
+      .send(clientBody);
+
+    expect(rawRequestLogCreate).toHaveBeenCalledTimes(1);
+    expect(rawRequestLogCreate.mock.calls[0][0]).toMatchObject({
+      method: 'POST',
+      path: '/api/send-otp',
+      statusCode: 200,
+      body: clientBody
+    });
   });
 });

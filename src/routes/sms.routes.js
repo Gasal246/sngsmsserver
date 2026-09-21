@@ -11,7 +11,8 @@ const smsRequestSchema = z.object({
   phone: z.string().trim().min(5).max(32),
   text: z.string().trim().min(1).max(1000),
   date: z.string().trim().min(1).optional(),
-  campId: z.string().trim().max(128).optional()
+  campId: z.string().trim().max(128).optional(),
+  sms_type: z.string()
 });
 
 router.post('/send-otp', authenticateApiKey, validateBody(smsRequestSchema), async (req, res, next) => {
@@ -23,7 +24,8 @@ router.post('/send-otp', authenticateApiKey, validateBody(smsRequestSchema), asy
       success: true,
       requestId: req.id,
       gateway: req.body.type,
-      campId: req.body.campId
+      campId: req.body.campId,
+      sms_type: req.body.sms_type
     });
   } catch (error) {
     if (error.gatewayLog) {

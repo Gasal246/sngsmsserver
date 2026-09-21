@@ -17,6 +17,9 @@ const loadApp = () => {
   jest.doMock('../src/models/requestLog.model', () => ({
     aggregate, create: jest.fn().mockResolvedValue({})
   }));
+  jest.doMock('../src/models/rawRequestLog.model', () => ({
+    create: jest.fn().mockResolvedValue({})
+  }));
   jest.doMock('axios', () => ({ get }));
   return { app: require('../src/app')(), aggregate, get };
 };

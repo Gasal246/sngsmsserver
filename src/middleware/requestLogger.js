@@ -38,6 +38,7 @@ const requestLogger = () => {
       apiKeyId: tokens['api-key-id'](req, res),
       request: {
         type: req.body?.type,
+        sms_type: req.body?.sms_type,
         phone: req.body?.phone,
         campId: req.body?.campId,
         date: req.body?.date,
