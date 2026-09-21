@@ -7,8 +7,11 @@ const loadApp = () => {
   process.env.SMART_SMS_UAE_USER_NAME = 'smart-user';
   process.env.SMART_SMS_UAE_API_PASSWORD = 'smart-password';
   const aggregate = jest.fn().mockResolvedValue([
-    { _id: '507f1f77bcf86cd799439011', total_sms_count: 3 },
-    { _id: 'camp-2', total_sms_count: 1 }
+    {
+      _id: '507f1f77bcf86cd799439011', total_sms_count: 3,
+      verification: 1, existing: 1, purchase: 1, no_id: 0
+    },
+    { _id: 'camp-2', total_sms_count: 1, verification: 0, existing: 0, purchase: 0, no_id: 1 }
   ]);
   const get = jest.fn().mockResolvedValue({ status: 200, data: ' 1234.5\n' });
   jest.doMock('../src/models/requestLog.model', () => ({
@@ -26,8 +29,14 @@ test('date report groups campaigns, defaults status, includes full final day, an
   expect(response.status).toBe(200);
   expect(response.body).toEqual({
     camps: [
-      { camp_id: '507f1f77bcf86cd799439011', total_sms_count: 3 },
-      { camp_id: 'camp-2', total_sms_count: 1 }
+      {
+        camp_id: '507f1f77bcf86cd799439011', total_sms_count: 3,
+        verification: 1, existing: 1, purchase: 1, no_id: 0
+      },
+      {
+        camp_id: 'camp-2', total_sms_count: 1,
+        verification: 0, existing: 0, purchase: 0, no_id: 1
+      }
     ],
     sms_status: 200,
     smart_sms_uae_balance: 1234.5,
@@ -37,7 +46,14 @@ test('date report groups campaigns, defaults status, includes full final day, an
     { $match: { path: '/api/send-otp', statusCode: 200, createdAt: {
       $gte: new Date('2025-09-01T00:00:00Z'), $lt: new Date('2025-10-01T00:00:00Z')
     }, 'request.campId': { $exists: true, $nin: [null, ''] } } },
-    { $group: { _id: '$request.campId', total_sms_count: { $sum: 1 } } },
+    { $group: {
+      _id: '$request.campId',
+      total_sms_count: { $sum: 1 },
+      verification: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'verification'] }, 1, 0] } },
+      existing: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'existing'] }, 1, 0] } },
+      purchase: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'purchase'] }, 1, 0] } },
+      no_id: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'no_nid'] }, 1, 0] } }
+    } },
     { $sort: { _id: 1 } }
   ]);
   expect(get).toHaveBeenCalledTimes(1);
@@ -68,8 +84,14 @@ test.each([
   expect(response.status).toBe(200);
   expect(response.body).toEqual({
     camps: [
-      { camp_id: '507f1f77bcf86cd799439011', total_sms_count: 3 },
-      { camp_id: 'camp-2', total_sms_count: 1 }
+      {
+        camp_id: '507f1f77bcf86cd799439011', total_sms_count: 3,
+        verification: 1, existing: 1, purchase: 1, no_id: 0
+      },
+      {
+        camp_id: 'camp-2', total_sms_count: 1,
+        verification: 0, existing: 0, purchase: 0, no_id: 1
+      }
     ],
     date: label,
     sms_status: 400,
@@ -106,6 +128,17 @@ test('returns empty camps with shared fields when no campaigns match', async () 
   expect((await fetchReport(app, '/smslogs/month-year?month=9&year=2025')).body).toEqual({
     camps: [], sms_status: 200, smart_sms_uae_balance: 1234.5, date: 'September 2025'
   });
+});
+
+test('always returns zero-valued sms type fields when counts are absent', async () => {
+  const { app, aggregate } = loadApp();
+  aggregate.mockResolvedValue([{ _id: 'camp-legacy', total_sms_count: 2 }]);
+  expect((await fetchReport(app, '/smslogs/month-year?month=9&year=2025')).body.camps).toEqual([
+    {
+      camp_id: 'camp-legacy', total_sms_count: 2,
+      verification: 0, existing: 0, purchase: 0, no_id: 0
+    }
+  ]);
 });
 
 test.each(['ERROR: invalid credentials', '', null, {}, '-1', 'Infinity'])('rejects malformed provider balance %p', async (data) => {

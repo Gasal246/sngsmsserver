@@ -26,14 +26,33 @@ const getReport = async (createdAt, smsStatus, date) => {
       createdAt,
       'request.campId': { $exists: true, $nin: [null, ''] }
     } },
-    { $group: { _id: '$request.campId', total_sms_count: { $sum: 1 } } },
+    { $group: {
+      _id: '$request.campId',
+      total_sms_count: { $sum: 1 },
+      verification: {
+        $sum: { $cond: [{ $eq: ['$request.sms_type', 'verification'] }, 1, 0] }
+      },
+      existing: {
+        $sum: { $cond: [{ $eq: ['$request.sms_type', 'existing'] }, 1, 0] }
+      },
+      purchase: {
+        $sum: { $cond: [{ $eq: ['$request.sms_type', 'purchase'] }, 1, 0] }
+      },
+      no_nid: {
+        $sum: { $cond: [{ $eq: ['$request.sms_type', 'no_nid'] }, 1, 0] }
+      }
+    } },
     { $sort: { _id: 1 } }
   ]);
   const balance = await getSmartSmsBalance();
   return {
     camps: campaigns.map((campaign) => ({
       camp_id: campaign._id,
-      total_sms_count: campaign.total_sms_count
+      total_sms_count: campaign.total_sms_count,
+      verification: campaign.verification ?? 0,
+      existing: campaign.existing ?? 0,
+      purchase: campaign.purchase ?? 0,
+      no_nid: campaign.no_nid ?? 0
     })),
     sms_status: smsStatus,
     smart_sms_uae_balance: balance,
