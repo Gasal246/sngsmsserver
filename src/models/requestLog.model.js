@@ -12,7 +12,7 @@ const requestLogSchema = new mongoose.Schema(
     apiKeyId: { type: String },
     request: {
       type: { type: String },
-      sms_type: { type: String }, // 'verification' or 'existing' or 'purchase' or 'no_nid'
+      sms_type: { type: String }, // 'new_user_eid', 'new_user', 'existing_user_eid', or 'existing_user'
       phone: { type: String },
       campId: { type: String },
       date: { type: String },

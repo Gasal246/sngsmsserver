@@ -29,17 +29,17 @@ const getReport = async (createdAt, smsStatus, date) => {
     { $group: {
       _id: '$request.campId',
       total_sms_count: { $sum: 1 },
-      verification: {
-        $sum: { $cond: [{ $eq: ['$request.sms_type', 'verification'] }, 1, 0] }
+      new_user_eid: {
+        $sum: { $cond: [{ $eq: ['$request.sms_type', 'new_user_eid'] }, 1, 0] }
       },
-      existing: {
-        $sum: { $cond: [{ $eq: ['$request.sms_type', 'existing'] }, 1, 0] }
+      new_user: {
+        $sum: { $cond: [{ $eq: ['$request.sms_type', 'new_user'] }, 1, 0] }
       },
-      purchase: {
-        $sum: { $cond: [{ $eq: ['$request.sms_type', 'purchase'] }, 1, 0] }
+      existing_user_eid: {
+        $sum: { $cond: [{ $eq: ['$request.sms_type', 'existing_user_eid'] }, 1, 0] }
       },
-      no_nid: {
-        $sum: { $cond: [{ $eq: ['$request.sms_type', 'no_nid'] }, 1, 0] }
+      existing_user: {
+        $sum: { $cond: [{ $eq: ['$request.sms_type', 'existing_user'] }, 1, 0] }
       }
     } },
     { $sort: { _id: 1 } }
@@ -49,10 +49,10 @@ const getReport = async (createdAt, smsStatus, date) => {
     camps: campaigns.map((campaign) => ({
       camp_id: campaign._id,
       total_sms_count: campaign.total_sms_count,
-      verification: campaign.verification ?? 0,
-      existing: campaign.existing ?? 0,
-      purchase: campaign.purchase ?? 0,
-      no_nid: campaign.no_nid ?? 0
+      new_user_eid: campaign.new_user_eid ?? 0,
+      new_user: campaign.new_user ?? 0,
+      existing_user_eid: campaign.existing_user_eid ?? 0,
+      existing_user: campaign.existing_user ?? 0
     })),
     sms_status: smsStatus,
     smart_sms_uae_balance: balance,

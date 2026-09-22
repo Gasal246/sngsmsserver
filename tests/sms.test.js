@@ -47,7 +47,7 @@ const validBody = {
   text: 'Your OTP is 123456',
   date: '2026-06-23T10:30:00Z',
   campId: 'camp-1',
-  sms_type: 'verification'
+  sms_type: 'new_user_eid'
 };
 
 describe('SMS API', () => {
@@ -154,6 +154,33 @@ describe('SMS API', () => {
     expect(axiosPost).not.toHaveBeenCalled();
   });
 
+  test.each(['new_user_eid', 'new_user', 'existing_user_eid', 'existing_user'])('accepts sms type %s', async (smsType) => {
+    const { app, axiosPost } = loadApp();
+    axiosPost.mockResolvedValue({ status: 200, data: 'OK' });
+
+    const response = await request(app)
+      .post('/api/send-otp')
+      .set('x-api-key', 'test-client-key')
+      .send({ ...validBody, sms_type: smsType });
+
+    expect(response.status).toBe(200);
+    expect(response.body.sms_type).toBe(smsType);
+    expect(axiosPost).toHaveBeenCalledTimes(1);
+  });
+
+  test('rejects retired sms types', async () => {
+    const { app, axiosPost } = loadApp();
+
+    const response = await request(app)
+      .post('/api/send-otp')
+      .set('x-api-key', 'test-client-key')
+      .send({ ...validBody, sms_type: 'verification' });
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe('VALIDATION_ERROR');
+    expect(axiosPost).not.toHaveBeenCalled();
+  });
+
   test('returns 502 for gateway non-success response', async () => {
     const { app, axiosPost } = loadApp();
     axiosPost.mockRejectedValue({
@@ -185,7 +212,7 @@ describe('SMS API', () => {
     const log = requestLogCreate.mock.calls[0][0];
 
     expect(log.request.campId).toBe('camp-1');
-    expect(log.request.sms_type).toBe('verification');
+    expect(log.request.sms_type).toBe('new_user_eid');
     expect(log.request.textLength).toBe('Your OTP is 123456'.length);
     expect(log.request.textHash).toHaveLength(64);
     expect(log.request.text).toBeUndefined();
