@@ -12,7 +12,7 @@ const smsRequestSchema = z.object({
   text: z.string().trim().min(1).max(1000),
   date: z.string().trim().min(1).optional(),
   campId: z.string().trim().max(128).optional(),
-  sms_type: z.enum(['new_user_eid', 'new_user', 'existing_user_eid', 'existing_user'])
+  sms_type: z.enum(['new_user_eid', 'new_user', 'existing_user_eid', 'existing_user', 'purchase'])
 });
 
 router.post('/send-otp', authenticateApiKey, validateBody(smsRequestSchema), async (req, res, next) => {

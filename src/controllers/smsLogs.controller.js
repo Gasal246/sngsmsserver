@@ -40,6 +40,9 @@ const getReport = async (createdAt, smsStatus, date) => {
       },
       existing_user: {
         $sum: { $cond: [{ $eq: ['$request.sms_type', 'existing_user'] }, 1, 0] }
+      },
+      purchase: {
+        $sum: { $cond: [{ $eq: ['$request.sms_type', 'purchase'] }, 1, 0] }
       }
     } },
     { $sort: { _id: 1 } }
@@ -52,7 +55,8 @@ const getReport = async (createdAt, smsStatus, date) => {
       new_user_eid: campaign.new_user_eid ?? 0,
       new_user: campaign.new_user ?? 0,
       existing_user_eid: campaign.existing_user_eid ?? 0,
-      existing_user: campaign.existing_user ?? 0
+      existing_user: campaign.existing_user ?? 0,
+      purchase: campaign.purchase ?? 0
     })),
     sms_status: smsStatus,
     smart_sms_uae_balance: balance,

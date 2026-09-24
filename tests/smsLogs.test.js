@@ -8,10 +8,10 @@ const loadApp = () => {
   process.env.SMART_SMS_UAE_API_PASSWORD = 'smart-password';
   const aggregate = jest.fn().mockResolvedValue([
     {
-      _id: '507f1f77bcf86cd799439011', total_sms_count: 3,
-      new_user_eid: 1, new_user: 1, existing_user_eid: 1, existing_user: 0
+      _id: '507f1f77bcf86cd799439011', total_sms_count: 4,
+      new_user_eid: 1, new_user: 1, existing_user_eid: 1, existing_user: 0, purchase: 1
     },
-    { _id: 'camp-2', total_sms_count: 1, new_user_eid: 0, new_user: 0, existing_user_eid: 0, existing_user: 1 }
+    { _id: 'camp-2', total_sms_count: 1, new_user_eid: 0, new_user: 0, existing_user_eid: 0, existing_user: 1, purchase: 0 }
   ]);
   const get = jest.fn().mockResolvedValue({ status: 200, data: ' 1234.5\n' });
   jest.doMock('../src/models/requestLog.model', () => ({
@@ -33,12 +33,12 @@ test('date report groups campaigns, defaults status, includes full final day, an
   expect(response.body).toEqual({
     camps: [
       {
-        camp_id: '507f1f77bcf86cd799439011', total_sms_count: 3,
-        new_user_eid: 1, new_user: 1, existing_user_eid: 1, existing_user: 0
+        camp_id: '507f1f77bcf86cd799439011', total_sms_count: 4,
+        new_user_eid: 1, new_user: 1, existing_user_eid: 1, existing_user: 0, purchase: 1
       },
       {
         camp_id: 'camp-2', total_sms_count: 1,
-        new_user_eid: 0, new_user: 0, existing_user_eid: 0, existing_user: 1
+        new_user_eid: 0, new_user: 0, existing_user_eid: 0, existing_user: 1, purchase: 0
       }
     ],
     sms_status: 200,
@@ -55,7 +55,8 @@ test('date report groups campaigns, defaults status, includes full final day, an
       new_user_eid: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'new_user_eid'] }, 1, 0] } },
       new_user: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'new_user'] }, 1, 0] } },
       existing_user_eid: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'existing_user_eid'] }, 1, 0] } },
-      existing_user: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'existing_user'] }, 1, 0] } }
+      existing_user: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'existing_user'] }, 1, 0] } },
+      purchase: { $sum: { $cond: [{ $eq: ['$request.sms_type', 'purchase'] }, 1, 0] } }
     } },
     { $sort: { _id: 1 } }
   ]);
@@ -88,12 +89,12 @@ test.each([
   expect(response.body).toEqual({
     camps: [
       {
-        camp_id: '507f1f77bcf86cd799439011', total_sms_count: 3,
-        new_user_eid: 1, new_user: 1, existing_user_eid: 1, existing_user: 0
+        camp_id: '507f1f77bcf86cd799439011', total_sms_count: 4,
+        new_user_eid: 1, new_user: 1, existing_user_eid: 1, existing_user: 0, purchase: 1
       },
       {
         camp_id: 'camp-2', total_sms_count: 1,
-        new_user_eid: 0, new_user: 0, existing_user_eid: 0, existing_user: 1
+        new_user_eid: 0, new_user: 0, existing_user_eid: 0, existing_user: 1, purchase: 0
       }
     ],
     date: label,
@@ -139,7 +140,7 @@ test('always returns zero-valued sms type fields when counts are absent', async 
   expect((await fetchReport(app, '/smslogs/month-year?month=9&year=2025')).body.camps).toEqual([
     {
       camp_id: 'camp-legacy', total_sms_count: 2,
-      new_user_eid: 0, new_user: 0, existing_user_eid: 0, existing_user: 0
+      new_user_eid: 0, new_user: 0, existing_user_eid: 0, existing_user: 0, purchase: 0
     }
   ]);
 });

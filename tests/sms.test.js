@@ -154,8 +154,8 @@ describe('SMS API', () => {
     expect(axiosPost).not.toHaveBeenCalled();
   });
 
-  test.each(['new_user_eid', 'new_user', 'existing_user_eid', 'existing_user'])('accepts sms type %s', async (smsType) => {
-    const { app, axiosPost } = loadApp();
+  test.each(['new_user_eid', 'new_user', 'existing_user_eid', 'existing_user', 'purchase'])('accepts sms type %s', async (smsType) => {
+    const { app, axiosPost, requestLogCreate } = loadApp();
     axiosPost.mockResolvedValue({ status: 200, data: 'OK' });
 
     const response = await request(app)
@@ -166,6 +166,7 @@ describe('SMS API', () => {
     expect(response.status).toBe(200);
     expect(response.body.sms_type).toBe(smsType);
     expect(axiosPost).toHaveBeenCalledTimes(1);
+    expect(requestLogCreate.mock.calls[0][0].request.sms_type).toBe(smsType);
   });
 
   test('rejects retired sms types', async () => {
